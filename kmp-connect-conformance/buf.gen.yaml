@@ -1,0 +1,6 @@
+version: v2
+plugins:
+  - local: ../protoc-gen-kmp-connect/build/install/protoc-gen-kmp-connect/bin/protoc-gen-kmp-connect
+    out: ./build/generated/sources/bufgen
+inputs:
+  - module: buf.build/connectrpc/conformance

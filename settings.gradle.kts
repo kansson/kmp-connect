@@ -1,3 +1,4 @@
+enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 pluginManagement {
     repositories {
         google()
@@ -16,3 +17,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "kmp-connect"
 include(":protoc-gen-kmp-connect")
+include(":kmp-connect-core")
+include(":kmp-connect-conformance")

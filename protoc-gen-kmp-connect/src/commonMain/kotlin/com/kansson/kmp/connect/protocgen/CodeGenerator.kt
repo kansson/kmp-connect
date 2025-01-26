@@ -69,7 +69,9 @@ public object CodeGenerator {
 
     private fun file(descriptor: Descriptors.FileDescriptor): FileSpec {
         val spec = FileSpec.builder(descriptor.`package`, descriptor.name)
-        val types = descriptor.messageTypes.map(::message)
+
+        val types = descriptor.messageTypes.map(::message) +
+            descriptor.enumTypes.map(::enum)
 
         spec.addTypes(types)
         return spec.build()
