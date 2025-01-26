@@ -1,12 +1,14 @@
 [versions]
 kotlin = "2.1.0"
 android = "8.6.1"
+serialization = "1.7.3"
 protobuf = "4.28.2"
 poet = "1.18.1"
 kermit = "2.0.4"
 detekt = "1.23.7"
 
 [libraries]
+kotlinx-serialization-protobuf = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-protobuf", version.ref = "serialization" }
 protobuf-kotlin = { group = "com.google.protobuf", name = "protobuf-kotlin", version.ref = "protobuf" }
 poet-kotlin= { group = "com.squareup", name = "kotlinpoet", version.ref = "poet" }
 kermit = { group = "co.touchlab", name = "kermit", version.ref = "kermit" }
