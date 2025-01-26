@@ -1,0 +1,8 @@
+complexity:
+  CyclomaticComplexMethod:
+    ignoreSimpleWhenEntries: true
+formatting:
+  TrailingCommaOnCallSite:
+    active: true
+  TrailingCommaOnDeclarationSite:
+    active: true

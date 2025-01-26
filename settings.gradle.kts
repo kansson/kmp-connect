@@ -7,11 +7,12 @@ pluginManagement {
 }
 
 dependencyResolutionManagement {
+    @Suppress("UnstableApiUsage")
     repositories {
         google()
         mavenCentral()
     }
 }
 
-rootProject.name = "multiplatform-library-template"
-include(":library")
+rootProject.name = "kmp-connect"
+include(":protoc-gen-kmp-connect")
