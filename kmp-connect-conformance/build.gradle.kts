@@ -17,6 +17,13 @@ kotlin {
     }
 
     sourceSets {
+        all {
+            languageSettings {
+                optIn("kotlinx.serialization.ExperimentalSerializationApi")
+                optIn("kotlin.io.encoding.ExperimentalEncodingApi")
+            }
+        }
+
         commonMain {
             kotlin.srcDir("./build/generated/sources/bufgen")
             dependencies {

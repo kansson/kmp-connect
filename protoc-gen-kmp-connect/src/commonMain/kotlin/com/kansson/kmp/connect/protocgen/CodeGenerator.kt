@@ -3,6 +3,9 @@ package com.kansson.kmp.connect.protocgen
 import com.google.protobuf.DescriptorProtos
 import com.google.protobuf.Descriptors
 import com.google.protobuf.compiler.PluginProtos
+import com.kansson.kmp.connect.core.ConnectTransport
+import com.kansson.kmp.connect.core.ResponseMessage
+import com.kansson.kmp.connect.core.Spec
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.BOOLEAN
 import com.squareup.kotlinpoet.BYTE_ARRAY
@@ -25,10 +28,12 @@ import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.U_INT
 import com.squareup.kotlinpoet.U_LONG
 import com.squareup.kotlinpoet.asClassName
+import io.ktor.http.Headers
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoNumber
 import kotlinx.serialization.protobuf.ProtoOneOf
+import kotlin.time.Duration
 
 @OptIn(ExperimentalSerializationApi::class)
 public object CodeGenerator {
@@ -71,7 +76,8 @@ public object CodeGenerator {
         val spec = FileSpec.builder(descriptor.`package`, descriptor.name)
 
         val types = descriptor.messageTypes.map(::message) +
-            descriptor.enumTypes.map(::enum)
+            descriptor.enumTypes.map(::enum) +
+            descriptor.services.map(::service)
 
         spec.addTypes(types)
         return spec.build()
@@ -176,6 +182,76 @@ public object CodeGenerator {
         return spec.build()
     }
 
+    private fun service(descriptor: Descriptors.ServiceDescriptor): TypeSpec {
+        val constructor = FunSpec.constructorBuilder()
+        val spec = TypeSpec.classBuilder(descriptor.name)
+
+        constructor.addParameter("transport", ConnectTransport::class)
+        val property = PropertySpec.builder("transport", ConnectTransport::class)
+            .addModifiers(KModifier.PRIVATE)
+            .initializer("transport")
+
+        spec.addProperty(property.build())
+        spec.primaryConstructor(constructor.build())
+
+        val functions = descriptor.methods.map(::method)
+        spec.addFunctions(functions)
+
+        return spec.build()
+    }
+
+    private fun method(descriptor: Descriptors.MethodDescriptor): FunSpec {
+        val type = when {
+            descriptor.isServerStreaming && descriptor.isClientStreaming -> Spec.Type.BIDIRECTIONAL
+            descriptor.isServerStreaming -> Spec.Type.SERVER
+            descriptor.isClientStreaming -> Spec.Type.CLIENT
+            else -> Spec.Type.UNARY
+        }
+
+        val spec = FunSpec.builder(descriptor.name.toCamelCase())
+        if (type != Spec.Type.UNARY) {
+            return spec
+                .addStatement("return throw %T()", NotImplementedError::class)
+                .build()
+        }
+
+        val procedure = "${descriptor.file.`package`}.${descriptor.service.name}/${descriptor.name}"
+        val input = ClassName(descriptor.inputType.file.`package`, descriptor.inputType.name)
+        val output = ClassName(descriptor.inputType.file.`package`, descriptor.outputType.name)
+        val idempotency = when (descriptor.options.idempotencyLevel) {
+            DescriptorProtos.MethodOptions.IdempotencyLevel.NO_SIDE_EFFECTS -> Spec.Idempotency.NO_SIDE_EFFECTS
+            DescriptorProtos.MethodOptions.IdempotencyLevel.IDEMPOTENT -> Spec.Idempotency.IDEMPOTENT
+            else -> Spec.Idempotency.UNKNOWN
+        }
+
+        val methodSpecBlock = CodeBlock.builder()
+            .addStatement("%T(", Spec::class)
+            .indent()
+            .addStatement("procedure = %S,", procedure)
+            .addStatement("type = %T.UNARY,", Spec.Type::class)
+            .addStatement("idempotency = %T.%L,", Spec.Idempotency::class, idempotency)
+            .addStatement("serializer = %T.serializer(),", input)
+            .addStatement("deserializer = %T.serializer(),", output)
+            .unindent()
+            .addStatement(")")
+
+        val headers = ParameterSpec.builder("headers", Headers::class)
+            .defaultValue("%T.Empty", Headers::class)
+        val timeout = ParameterSpec.builder("timeout", Duration::class.asClassName().copy(nullable = true))
+            .defaultValue("null")
+
+        spec
+            .addParameter("input", input)
+            .addParameter(headers.build())
+            .addParameter(timeout.build())
+            .addModifiers(KModifier.SUSPEND)
+            .returns(ResponseMessage::class.asClassName().parameterizedBy(output))
+            .addCode("val spec = %L", methodSpecBlock.build())
+            .addStatement("return transport.unary(input, spec, headers, timeout)")
+
+        return spec.build()
+    }
+
     private fun protoNumberAnnotation(number: Int): AnnotationSpec = AnnotationSpec.builder(ProtoNumber::class)
         .addMember("%L", number)
         .build()
@@ -204,11 +280,16 @@ public object CodeGenerator {
                 Descriptors.FieldDescriptor.Type.BOOL -> BOOLEAN
                 Descriptors.FieldDescriptor.Type.STRING -> STRING
                 Descriptors.FieldDescriptor.Type.BYTES -> BYTE_ARRAY
-                Descriptors.FieldDescriptor.Type.MESSAGE -> ClassName(
-                    messageType.fullName.substringBeforeLast("."),
-                    messageType.name,
-                )
-                Descriptors.FieldDescriptor.Type.ENUM -> ClassName(
+                Descriptors.FieldDescriptor.Type.MESSAGE -> when (messageType.name) {
+                    com.google.protobuf.Any.getDescriptor().name ->
+                        com.kansson.kmp.connect.core.wkt.Any::class.asClassName()
+                    else -> ClassName(
+                        messageType.fullName.substringBeforeLast("."),
+                        messageType.name,
+                    )
+                }
+                Descriptors.FieldDescriptor.Type.ENUM,
+                -> ClassName(
                     enumType.fullName.substringBeforeLast("."),
                     enumType.name,
                 )
@@ -224,6 +305,7 @@ public object CodeGenerator {
     }
 
     private fun Descriptors.FieldDescriptor.defaultCodeBlock(): CodeBlock? = when {
+        hasPresence() -> null
         isMapField -> CodeBlock.of("emptyMap()")
         isRepeated -> CodeBlock.of("emptyList()")
         else -> when (type) {
