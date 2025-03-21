@@ -1,5 +1,21 @@
+import io.gitlab.arturbosch.detekt.Detekt
+
 plugins {
-    //trick: for the same plugin versions in all sub-modules
-    alias(libs.plugins.androidLibrary).apply(false)
-    alias(libs.plugins.kotlinMultiplatform).apply(false)
+    alias(libs.plugins.kotlin.multiplatform) apply false
+    alias(libs.plugins.detekt)
+}
+
+dependencies {
+    detektPlugins(libs.detekt.formatting)
+}
+
+detekt {
+    source.from(rootProject.rootDir)
+    parallel = true
+    config.from("detekt.yaml")
+    buildUponDefaultConfig = true
+}
+
+tasks.withType<Detekt>().configureEach {
+    exclude("**/build/**")
 }
