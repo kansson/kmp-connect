@@ -1,10 +1,9 @@
-plugins {
-    application
-    alias(libs.plugins.kotlin.multiplatform)
-}
+@file:OptIn(ExperimentalKotlinGradlePluginApi::class)
 
-application {
-    mainClass = "com.kansson.kmp.connect.protocgen.MainKt"
+import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
+
+plugins {
+    alias(libs.plugins.kotlin.multiplatform)
 }
 
 kotlin {
@@ -12,14 +11,20 @@ kotlin {
     jvmToolchain(21)
 
     jvm {
-        withJava()
+        binaries {
+            executable {
+                mainClass = "com.kansson.kmp.connect.protocgen.MainKt"
+            }
+        }
     }
 
     sourceSets {
         commonMain.dependencies {
+            implementation(projects.kmpConnectCore)
             implementation(libs.kotlinx.serialization.protobuf)
             implementation(libs.protobuf.kotlin)
             implementation(libs.poet.kotlin)
+            implementation(libs.ktor.client.core)
             implementation(libs.kermit)
         }
     }

@@ -17,3 +17,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "kmp-connect"
 include(":protoc-gen-kmp-connect")
+include(":kmp-connect-core")
