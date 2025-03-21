@@ -6,6 +6,7 @@ protobuf = "4.30.1"
 poet = "2.1.0"
 ktor = "3.1.1"
 kermit = "2.0.5"
+publish = "0.31.0"
 detekt = "1.23.8"
 
 [libraries]
@@ -21,4 +22,5 @@ detekt-formatting = { group = "io.gitlab.arturbosch.detekt", name = "detekt-form
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlin-plugin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 android-library = { id = "com.android.library", version.ref = "android" }
+publish = { id = "com.vanniktech.maven.publish", version.ref = "publish" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }

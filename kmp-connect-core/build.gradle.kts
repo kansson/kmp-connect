@@ -1,12 +1,11 @@
+import com.vanniktech.maven.publish.SonatypeHost
+
 plugins {
-    `maven-publish`
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.kotlin.plugin.serialization)
     alias(libs.plugins.android.library)
+    alias(libs.plugins.publish)
 }
-
-group = "com.kansson.kmp"
-version = "1.0"
 
 kotlin {
     explicitApi()
@@ -35,5 +34,31 @@ android {
     compileSdk = 35
     defaultConfig {
         minSdk = 24
+    }
+}
+
+mavenPublishing {
+    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
+    pom {
+        name = "kmp-connect"
+        description = "Kotlin Multiplatform implementation for Connect RPC."
+        url = "https://github.com/kansson/kmp-connect"
+        licenses {
+            license {
+                name = "MIT License"
+                url = "https://opensource.org/licenses/mit"
+            }
+        }
+        developers {
+            developer {
+                id = "kansson"
+                name = "Isak Hansson"
+            }
+        }
+        scm {
+            connection = "scm:git:https://github.com/kansson/kmp-connect.git"
+            developerConnection = "scm:git:ssh://git@github.com/kansson/kmp-connect.git"
+            url = "https://github.com/kansson/kmp-connect"
+        }
     }
 }
