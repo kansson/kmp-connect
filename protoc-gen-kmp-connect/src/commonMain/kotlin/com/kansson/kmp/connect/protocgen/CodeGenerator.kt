@@ -377,6 +377,13 @@ public object CodeGenerator {
             Descriptors.FieldDescriptor.Type.BOOL -> CodeBlock.of("false")
             Descriptors.FieldDescriptor.Type.STRING -> CodeBlock.of("%S", defaultValue)
             Descriptors.FieldDescriptor.Type.BYTES -> CodeBlock.of("byteArrayOf()")
+            Descriptors.FieldDescriptor.Type.MESSAGE -> CodeBlock.of(
+                "%T()",
+                ClassName(
+                    messageType.fullName.substringBeforeLast("."),
+                    messageType.name,
+                ),
+            )
             Descriptors.FieldDescriptor.Type.ENUM -> CodeBlock.of("%L.%L", enumType.fullName, defaultValue)
             else -> null
         }
